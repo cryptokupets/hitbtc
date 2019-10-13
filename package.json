@@ -1,0 +1,47 @@
+{
+  "name": "hitbtc-connect",
+  "version": "1.0.0",
+  "description": "Connector to Hitbtc API",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cryptokupets/hitbtc.git"
+  },
+  "homepage": "https://github.com/cryptokupets/hitbtc",
+  "bugs": {
+    "url": "https://github.com/cryptokupets/hitbtc/issues"
+  },
+  "scripts": {
+    "prebuild": "tslint -c tslint.json -p tsconfig.json --fix",
+    "build": "tsc",
+    "test": "mocha"
+  },
+  "keywords": [
+    "hitbtc"
+  ],
+  "author": {
+    "name": "Dmitry Fokin"
+  },
+  "engines": {
+    "node": ">= 12.10.0",
+    "npm": ">= 6.11.3"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "moment": "^2.24.0",
+    "request": "^2.88.0",
+    "request-promise-native": "^1.0.7"
+  },
+  "devDependencies": {
+    "@types/node": "^12.7.4",
+    "@types/request-promise-native": "^1.0.16",
+    "babel-cli": "^6.26.0",
+    "babel-plugin-transform-class-properties": "^6.24.1",
+    "babel-plugin-transform-decorators-legacy": "^1.3.5",
+    "babel-plugin-transform-es2015-modules-commonjs": "^6.26.2",
+    "babel-preset-env": "^1.7.0",
+    "chai": "^4.2.0",
+    "mocha": "^6.2.1",
+    "tslint": "^5.19.0",
+    "typescript": "^3.6.2"
+  }
+}
