@@ -1,17 +1,10 @@
 {
   "compilerOptions": {
-    "experimentalDecorators": true,
-    "module": "commonjs",
+    "declaration": true,
     "esModuleInterop": true,
     "target": "es6",
-    "noImplicitAny": true,
     "moduleResolution": "node",
-    "sourceMap": true,
-    "outDir": "lib",
-    "baseUrl": ".",
-    "paths": {
-      "*": ["node_modules/*"]
-    }
+    "outDir": "lib"
   },
   "include": ["src/**/*"]
 }
