@@ -1,6 +1,6 @@
 {
   "name": "hitbtc-connect",
-  "version": "1.0.0-alpha.1",
+  "version": "1.0.0-alpha.2",
   "description": "Connector to Hitbtc API",
   "repository": {
     "type": "git",
@@ -10,6 +10,7 @@
   "bugs": {
     "url": "https://github.com/cryptokupets/hitbtc/issues"
   },
+  "main": "lib/index.js",
   "scripts": {
     "prebuild": "tslint -c tslint.json -p tsconfig.json --fix",
     "build": "tsc",
