@@ -24,6 +24,15 @@ interface IMarketDataSource {
   }): Promise<ICandle[]>;
 }
 
+export interface ITicker {
+  ask: number;
+  bid: number;
+}
+
+export interface IExchange {
+  getTicker(options: { currency: string; asset: string }): Promise<ITicker>;
+}
+
 function convertPeriod(period: number): string {
   let timeframe;
   switch ("" + period) {
@@ -58,7 +67,7 @@ function convertPeriod(period: number): string {
   return timeframe;
 }
 
-export class Exchange implements IMarketDataSource {
+export class Exchange implements IMarketDataSource, IExchange {
   public async getPairs(): Promise<Array<{ currency: string; asset: string }>> {
     const options = {
       baseUrl: BASE_URL,
@@ -128,5 +137,31 @@ export class Exchange implements IMarketDataSource {
           };
         })
       : [];
+  }
+
+  public async getTicker({
+    currency,
+    asset
+  }: {
+    currency: string;
+    asset: string;
+  }): Promise<ITicker> {
+    const options = {
+      baseUrl: BASE_URL,
+      url: `public/ticker/${asset.toUpperCase()}${currency.toUpperCase()}`
+    };
+
+    const {
+      ask,
+      bid
+    }: {
+      ask: string;
+      bid: string;
+    } = JSON.parse(await request.get(options));
+
+    return {
+      ask: +ask,
+      bid: +bid
+    };
   }
 }
