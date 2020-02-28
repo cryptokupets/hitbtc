@@ -1,7 +1,10 @@
 import moment from "moment";
 import * as request from "request-promise-native";
+import { Readable } from "stream";
+import WebSocket from "ws";
 
 const BASE_URL = "https://api.hitbtc.com/api/2/";
+const WS_ADDRESS = "wss://api.hitbtc.com/api/2/ws";
 
 interface ICandle {
   time: string;
@@ -164,4 +167,117 @@ export class Exchange implements IMarketDataSource, IExchange {
       bid: +bid
     };
   }
+  
+  export function liveCandles({
+  exchange,
+  currency,
+  asset,
+  period
+}: {
+  exchange: string;
+  currency: string;
+  asset: string;
+  period: number;
+}): Readable {
+    const ws = new WebSocket(WS_ADDRESS);
+  const rs = new Readable({
+      objectMode: true,
+    read: () => {},
+    destroy: (err, callback) => {
+        ws.on("close", callback);
+        ws.close();
+    }
+  });
+    
+        ws.on("open", () => {
+      ws.send(
+        JSON.stringify({
+          method: "subscribeCandles",
+          params: {
+              symbol: `${asset.toUpperCase()}${currency.toUpperCase()}`,
+              period: convertPeriod(period),
+              limit: 1000
+          },
+          id: 0
+        })
+      );
+    });
+
+    ws.on("message", e => {
+      const data: { method: string; params: {
+          data: Array<{
+          timestamp: string;
+          open: string;
+          max: string;
+          min: string;
+          close: string;
+          volume: string;
+        }>);
+      } } = JSON.parse(
+        e as string
+      );
+      const params = data.params;
+      if ((data.method === "snapshotCandles" || data.method === "updateCandles") && params && params.data) {
+          rs.push(data.map(e => {
+          return {
+            time: e.timestamp,
+            open: +e.open,
+            high: +e.max,
+            low: +e.min,
+            close: +e.close,
+            volume: +e.volume
+          } as ICandle;
+        }));
+      }
+    });
+  }
+
+  return rs;
+}
+
+export function liveTicker({
+  exchange,
+  currency,
+  asset
+}: {
+  exchange: string;
+  currency: string;
+  asset: string;
+}): Readable {
+    const ws = new WebSocket(WS_ADDRESS);
+  const rs = new Readable({
+      objectMode: true,
+    read: () => {},
+    destroy: (err, callback) => {
+        ws.on("close", callback);
+        ws.close();
+    }
+  });
+    
+    ws.on("open", () => {
+      ws.send(
+        JSON.stringify({
+          method: "subscribeTicker",
+          params: { symbol: `${asset.toUpperCase()}${currency.toUpperCase()}` },
+          id: 0
+        })
+      );
+    });
+
+    ws.on("message", e => {
+      const data: { method: string; params: { ask: string; bid: string; } } = JSON.parse(
+        e as string
+      );
+      const params = data.params;
+      if (data.method === "ticker" && params) {
+          rs.push({
+              ask: +params.ask,
+              bid: +params.bid
+          }: ITicker);
+      }
+    });
+  }
+
+  return rs;
+}
 }
