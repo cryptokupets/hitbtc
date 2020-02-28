@@ -1,7 +1,10 @@
 import moment from "moment";
 import * as request from "request-promise-native";
+import { Readable } from "stream";
+import WebSocket from "ws";
 
 const BASE_URL = "https://api.hitbtc.com/api/2/";
+const WS_ADDRESS = "wss://api.hitbtc.com/api/2/ws";
 
 interface ICandle {
   time: string;
@@ -22,6 +25,15 @@ interface IMarketDataSource {
     start: string;
     end: string;
   }): Promise<ICandle[]>;
+}
+
+export interface ITicker {
+  ask: number;
+  bid: number;
+}
+
+export interface IExchange {
+  getTicker(options: { currency: string; asset: string }): Promise<ITicker>;
 }
 
 function convertPeriod(period: number): string {
@@ -58,7 +70,7 @@ function convertPeriod(period: number): string {
   return timeframe;
 }
 
-export class Exchange implements IMarketDataSource {
+export class Exchange implements IMarketDataSource, IExchange {
   public async getPairs(): Promise<Array<{ currency: string; asset: string }>> {
     const options = {
       baseUrl: BASE_URL,
@@ -128,5 +140,150 @@ export class Exchange implements IMarketDataSource {
           };
         })
       : [];
+  }
+
+  public async getTicker({
+    currency,
+    asset
+  }: {
+    currency: string;
+    asset: string;
+  }): Promise<ITicker> {
+    const options = {
+      baseUrl: BASE_URL,
+      url: `public/ticker/${asset.toUpperCase()}${currency.toUpperCase()}`
+    };
+
+    const {
+      ask,
+      bid
+    }: {
+      ask: string;
+      bid: string;
+    } = JSON.parse(await request.get(options));
+
+    return {
+      ask: +ask,
+      bid: +bid
+    };
+  }
+
+  public liveCandles({
+    currency,
+    asset,
+    period
+  }: {
+    currency: string;
+    asset: string;
+    period: number;
+  }): Readable {
+    const ws = new WebSocket(WS_ADDRESS);
+    const rs = new Readable({
+      objectMode: true,
+      read: () => {},
+      destroy: (err, callback) => {
+        ws.on("close", () => {
+          callback(err);
+        });
+        ws.close();
+      }
+    });
+
+    ws.on("open", () => {
+      ws.send(
+        JSON.stringify({
+          method: "subscribeCandles",
+          params: {
+            symbol: `${asset.toUpperCase()}${currency.toUpperCase()}`,
+            period: convertPeriod(period),
+            limit: 1000
+          },
+          id: 0
+        })
+      );
+    });
+
+    ws.on("message", (m: string) => {
+      const data: {
+        method: string;
+        params: {
+          data: Array<{
+            timestamp: string;
+            open: string;
+            max: string;
+            min: string;
+            close: string;
+            volume: string;
+          }>;
+        };
+      } = JSON.parse(m);
+      const params = data.params;
+      if (
+        (data.method === "snapshotCandles" ||
+          data.method === "updateCandles") &&
+        params &&
+        params.data
+      ) {
+        rs.push(
+          params.data.map(e => {
+            return {
+              time: e.timestamp,
+              open: +e.open,
+              high: +e.max,
+              low: +e.min,
+              close: +e.close,
+              volume: +e.volume
+            } as ICandle;
+          })
+        );
+      }
+    });
+    return rs;
+  }
+
+  public liveTicker({
+    currency,
+    asset
+  }: {
+    currency: string;
+    asset: string;
+  }): Readable {
+    const ws = new WebSocket(WS_ADDRESS);
+    const rs = new Readable({
+      objectMode: true,
+      read: () => {},
+      destroy: (err, callback) => {
+        ws.on("close", () => {
+          callback(err);
+        });
+        ws.close();
+      }
+    });
+
+    ws.on("open", () => {
+      ws.send(
+        JSON.stringify({
+          method: "subscribeTicker",
+          params: { symbol: `${asset.toUpperCase()}${currency.toUpperCase()}` },
+          id: 0
+        })
+      );
+    });
+
+    ws.on("message", (m: string) => {
+      const data: {
+        method: string;
+        params: { ask: string; bid: string };
+      } = JSON.parse(m);
+      const params = data.params;
+      if (data.method === "ticker" && params) {
+        rs.push({
+          ask: +params.ask,
+          bid: +params.bid
+        });
+      }
+    });
+
+    return rs;
   }
 }

@@ -74,3 +74,22 @@ describe("getCandles", () => {
     });
   });
 });
+
+describe("getTicker", () => {
+  it("getTicker", function(done) {
+    const options = {
+      currency: "USD",
+      asset: "BTC"
+    };
+    const exchange = new Exchange();
+    assert.isFunction(exchange.getTicker);
+    exchange.getTicker(options).then(ticker => {
+      assert.isObject(ticker);
+      assert.property(ticker, "ask");
+      assert.property(ticker, "bid");
+      assert.isNumber(ticker.ask);
+      assert.isNumber(ticker.bid);
+      done();
+    });
+  });
+});
