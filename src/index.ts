@@ -169,12 +169,10 @@ export class Exchange implements IMarketDataSource, IExchange {
   }
   
   export function liveCandles({
-  exchange,
   currency,
   asset,
   period
 }: {
-  exchange: string;
   currency: string;
   asset: string;
   period: number;
@@ -236,11 +234,9 @@ export class Exchange implements IMarketDataSource, IExchange {
 }
 
 export function liveTicker({
-  exchange,
   currency,
   asset
 }: {
-  exchange: string;
   currency: string;
   asset: string;
 }): Readable {
