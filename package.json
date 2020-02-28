@@ -1,6 +1,6 @@
 {
   "name": "hitbtc-connect",
-  "version": "1.0.1-alpha",
+  "version": "1.0.2-alpha",
   "description": "Connector to Hitbtc API",
   "repository": {
     "type": "git",
@@ -30,7 +30,8 @@
   "dependencies": {
     "moment": "^2.24.0",
     "request": "^2.88.0",
-    "request-promise-native": "^1.0.7"
+    "request-promise-native": "^1.0.7",
+    "ws": "^7.2.1"
   },
   "devDependencies": {
     "@types/node": "^12.7.4",

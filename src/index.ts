@@ -167,89 +167,99 @@ export class Exchange implements IMarketDataSource, IExchange {
       bid: +bid
     };
   }
-  
-  export function liveCandles({
-  currency,
-  asset,
-  period
-}: {
-  currency: string;
-  asset: string;
-  period: number;
-}): Readable {
+
+  public liveCandles({
+    currency,
+    asset,
+    period
+  }: {
+    currency: string;
+    asset: string;
+    period: number;
+  }): Readable {
     const ws = new WebSocket(WS_ADDRESS);
-  const rs = new Readable({
+    const rs = new Readable({
       objectMode: true,
-    read: () => {},
-    destroy: (err, callback) => {
-        ws.on("close", callback);
+      read: () => {},
+      destroy: (err, callback) => {
+        ws.on("close", () => {
+          callback(err);
+        });
         ws.close();
-    }
-  });
-    
-        ws.on("open", () => {
+      }
+    });
+
+    ws.on("open", () => {
       ws.send(
         JSON.stringify({
           method: "subscribeCandles",
           params: {
-              symbol: `${asset.toUpperCase()}${currency.toUpperCase()}`,
-              period: convertPeriod(period),
-              limit: 1000
+            symbol: `${asset.toUpperCase()}${currency.toUpperCase()}`,
+            period: convertPeriod(period),
+            limit: 1000
           },
           id: 0
         })
       );
     });
 
-    ws.on("message", e => {
-      const data: { method: string; params: {
+    ws.on("message", (m: string) => {
+      const data: {
+        method: string;
+        params: {
           data: Array<{
-          timestamp: string;
-          open: string;
-          max: string;
-          min: string;
-          close: string;
-          volume: string;
-        }>);
-      } } = JSON.parse(
-        e as string
-      );
+            timestamp: string;
+            open: string;
+            max: string;
+            min: string;
+            close: string;
+            volume: string;
+          }>;
+        };
+      } = JSON.parse(m);
       const params = data.params;
-      if ((data.method === "snapshotCandles" || data.method === "updateCandles") && params && params.data) {
-          rs.push(data.map(e => {
-          return {
-            time: e.timestamp,
-            open: +e.open,
-            high: +e.max,
-            low: +e.min,
-            close: +e.close,
-            volume: +e.volume
-          } as ICandle;
-        }));
+      if (
+        (data.method === "snapshotCandles" ||
+          data.method === "updateCandles") &&
+        params &&
+        params.data
+      ) {
+        rs.push(
+          params.data.map(e => {
+            return {
+              time: e.timestamp,
+              open: +e.open,
+              high: +e.max,
+              low: +e.min,
+              close: +e.close,
+              volume: +e.volume
+            } as ICandle;
+          })
+        );
       }
     });
+    return rs;
   }
 
-  return rs;
-}
-
-export function liveTicker({
-  currency,
-  asset
-}: {
-  currency: string;
-  asset: string;
-}): Readable {
+  public liveTicker({
+    currency,
+    asset
+  }: {
+    currency: string;
+    asset: string;
+  }): Readable {
     const ws = new WebSocket(WS_ADDRESS);
-  const rs = new Readable({
+    const rs = new Readable({
       objectMode: true,
-    read: () => {},
-    destroy: (err, callback) => {
-        ws.on("close", callback);
+      read: () => {},
+      destroy: (err, callback) => {
+        ws.on("close", () => {
+          callback(err);
+        });
         ws.close();
-    }
-  });
-    
+      }
+    });
+
     ws.on("open", () => {
       ws.send(
         JSON.stringify({
@@ -260,20 +270,20 @@ export function liveTicker({
       );
     });
 
-    ws.on("message", e => {
-      const data: { method: string; params: { ask: string; bid: string; } } = JSON.parse(
-        e as string
-      );
+    ws.on("message", (m: string) => {
+      const data: {
+        method: string;
+        params: { ask: string; bid: string };
+      } = JSON.parse(m);
       const params = data.params;
       if (data.method === "ticker" && params) {
-          rs.push({
-              ask: +params.ask,
-              bid: +params.bid
-          }: ITicker);
+        rs.push({
+          ask: +params.ask,
+          bid: +params.bid
+        });
       }
     });
-  }
 
-  return rs;
-}
+    return rs;
+  }
 }

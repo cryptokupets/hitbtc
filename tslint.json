@@ -6,7 +6,8 @@
     "no-console": false,
     "object-literal-sort-keys": false,
     "arrow-parens": false,
-    "trailing-comma": false
+    "trailing-comma": false,
+    "no-empty": false
   },
   "rulesDirectory": []
 }
